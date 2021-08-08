@@ -9,6 +9,9 @@
     <com.example.speedometer.views.CircularGaugeView
         android:id="@+id/speedView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        app:startAngle="180"
+        app:endAngle="-90"
+        app:criticalSectionPercent="0.25"/>
 
 </FrameLayout>

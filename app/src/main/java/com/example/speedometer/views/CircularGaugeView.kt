@@ -8,6 +8,7 @@ import android.util.AttributeSet
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
 import androidx.core.animation.doOnEnd
+import com.example.speedometer.R
 import java.lang.Math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -20,6 +21,10 @@ open class CircularGaugeView @JvmOverloads constructor(
 
     private val animator = ValueAnimator.ofFloat().apply {
         interpolator = AccelerateDecelerateInterpolator()
+        addUpdateListener {
+            gaugeValue = it.animatedValue as Int
+            invalidate()
+        }
     }
 
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -90,25 +95,23 @@ open class CircularGaugeView @JvmOverloads constructor(
     var maxValue: Int = 220
     var valueStep: Int = 20
     var minorMarkStep: Int = 5
-
     var gaugeValue = 0
         private set
 
+    var criticalSectionPercent = .2f
+
     init {
         init()
+        obtainStyledAttributes(attrs, defStyleAttr)
     }
 
     fun setGaugeValue(s: Int, d: Long, onEnd: (() -> Unit)? = null) {
         animator.apply {
+            duration = d
             setIntValues(gaugeValue, s)
-            addUpdateListener {
-                gaugeValue = it.animatedValue as Int
-                invalidate()
-            }
             doOnEnd {
                 onEnd?.invoke()
             }
-            duration = d
             start()
         }
     }
@@ -162,6 +165,31 @@ open class CircularGaugeView @JvmOverloads constructor(
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
         attachedToWindow = false
+    }
+
+    private fun obtainStyledAttributes(attrs: AttributeSet?, defStyleAttr: Int) {
+        val typedArray = context.theme.obtainStyledAttributes(
+            attrs,
+            R.styleable.CircularGaugeView,
+            defStyleAttr,
+            0
+        )
+
+        try {
+            with(typedArray) {
+                maxValue = getInt(R.styleable.CircularGaugeView_maxValue, 220)
+                minValue = getInt(R.styleable.CircularGaugeView_minValue, 0)
+                valueStep = getInt(R.styleable.CircularGaugeView_markStep, 20)
+                minorMarkStep = getInt(R.styleable.CircularGaugeView_minorMarkStep, 5)
+                startAngle = getFloat(R.styleable.CircularGaugeView_startAngle, 220f)
+                endAngle = getFloat(R.styleable.CircularGaugeView_endAngle, -40f)
+                criticalSectionPercent =
+                    getFloat(R.styleable.CircularGaugeView_criticalSectionPercent, .2f)
+            }
+        } catch (_: Exception) {
+        } finally {
+            typedArray.recycle()
+        }
     }
 
     private fun calculateMarks() {
@@ -258,17 +286,9 @@ open class CircularGaugeView @JvmOverloads constructor(
     private fun Float.toRadian(): Float = this * (PI / 180).toFloat()
 
     companion object {
-        private const val MIN_ANGLE = 220f
-        private const val MAX_ANGLE = -40f
-        private const val START_ANGLE = 140f
-        private const val SWEEP_ANGLE = 260f
-
-        private const val MIN_SPEED = 0
         private const val TICK_MARGIN = 10f
         private const val TICK_TEXT_MARGIN = 30f
         private const val MAJOR_TICK_SIZE = 50f
         private const val MINOR_TICK_SIZE = 25f
-        private const val MAJOR_TICK_WIDTH = 4f
-        private const val MINOR_TICK_WIDTH = 2f
     }
 }
